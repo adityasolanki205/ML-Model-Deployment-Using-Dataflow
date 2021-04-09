@@ -1,4 +1,4 @@
-# ML Model deployment using DataFlow
+# ML model deployment using DataFlow
 This is one of the part of **Introduction to Apache Beam using Python** Repository. Here we will try to learn basics of Apache Beam to create **Batch** pipelines and deploy a Machine learning model. We will learn step by step process on how to create a this pipeline using [German Credit Risk](https://www.kaggle.com/uciml/german-credit). The complete process is divided into 7 parts:
 
 1. **Reading the data**
