@@ -11,7 +11,7 @@ SCHEMA='Duration_month:INTEGER,Credit_history:STRING,Credit_amount:FLOAT,Saving:
 class Split(beam.DoFn):
     #This Function Splits the Dataset into a dictionary
     def process(self, element):
-        Existing_account,Duration_month,Credit_history,Purpose,Credit_amount,Saving,Employment_duration,Installment_rate,Personal_status,Debtors,Residential_Duration,Property,Age,Installment_plans,Housing,Number_of_credits,Job,Liable_People,Telephone,Foreign_worker = element.split(',')
+        serial_number,Existing_account,Duration_month,Credit_history,Purpose,Credit_amount,Saving,Employment_duration,Installment_rate,Personal_status,Debtors,Residential_Duration,Property,Age,Installment_plans,Housing,Number_of_credits,Job,Liable_People,Telephone,Foreign_worker = element.split(',')
         return [{
             'Existing_account': str(Existing_account),
             'Duration_month': str(Duration_month),
@@ -108,12 +108,11 @@ def run(argv=None, save_main_session=True):
     PROJECT_ID = known_args.project
     with beam.Pipeline(options=PipelineOptions()) as p:
         data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-        output = ( data
-                   | 'Saving the output' >> beam.io.WriteToText(known_args.output))
-        '''parsed_data = (data 
+                     | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
+        
+        parsed_data = (data 
                      | 'Parsing Data' >> beam.ParDo(Split()))
-        filtered_data = (parsed_data
+        '''filtered_data = (parsed_data
                      | 'Filtering Data' >> beam.Filter(Filter_Data))
         Converted_data = (filtered_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
@@ -126,6 +125,8 @@ def run(argv=None, save_main_session=True):
                        '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
                        schema=SCHEMA,
                        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)'''
+        output = ( parsed_data
+                   | 'Saving the output' >> beam.io.WriteToText(known_args.output))
         
 if __name__ == '__main__':
     run()
