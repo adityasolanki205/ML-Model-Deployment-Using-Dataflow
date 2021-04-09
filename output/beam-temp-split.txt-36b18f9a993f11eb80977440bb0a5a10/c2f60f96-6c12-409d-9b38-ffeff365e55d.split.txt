@@ -1,0 +1,1 @@
+,Existing account,Duration month,Credit history,Purpose,Credit amount,Saving,Employment duration,Installment rate,Personal status,Debtors,Residential Duration,Property,Age,Installment plans,Housing,Number of credits,Job,Liable People,Telephone,Foreign worker
