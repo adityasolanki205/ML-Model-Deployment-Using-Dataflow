@@ -35,58 +35,31 @@ class Split(beam.DoFn):
             'Foreign_worker': str(Foreign_worker),
         }]
 
-def Filter_Data(data):
-    #This will remove rows the with Null values in any one of the columns
-    return data['Purpose'] !=  'NULL' and len(data['Purpose']) <= 3  and  data['Classification'] !=  'NULL' and data['Property'] !=  'NULL' and data['Personal_status'] != 'NULL' and data['Existing_account'] != 'NULL' and data['Credit_amount'] != 'NULL' and data['Installment_plans'] != 'NULL'
-
 def Convert_Datatype(data):
     #This will convert the datatype of columns from String to integers or Float values
-    data['Duration_month'] = int(data['Duration_month']) if 'Duration_month' in data else None
+    data['Duration_month'] = float(data['Duration_month']) if 'Duration_month' in data else None
     data['Credit_amount'] = float(data['Credit_amount']) if 'Credit_amount' in data else None
-    data['Installment_rate'] = int(data['Installment_rate']) if 'Installment_rate' in data else None
-    data['Residential_Duration'] = int(data['Residential_Duration']) if 'Residential_Duration' in data else None
-    data['Age'] = int(data['Age']) if 'Age' in data else None
-    data['Number_of_credits'] = int(data['Number_of_credits']) if 'Number_of_credits' in data else None
-    data['Liable_People'] = int(data['Liable_People']) if 'Liable_People' in data else None
-    data['Classification'] =  int(data['Classification']) if 'Classification' in data else None
-   
+    data['Installment_rate'] = float(data['Installment_rate']) if 'Installment_rate' in data else None
+    data['Residential_Duration'] = float(data['Residential_Duration']) if 'Residential_Duration' in data else None
+    data['Age'] = float(data['Age']) if 'Age' in data else None
+    data['Number_of_credits'] = float(data['Number_of_credits']) if 'Number_of_credits' in data else None
+    data['Liable_People'] = float(data['Liable_People']) if 'Liable_People' in data else None
+    data['Existing_account'] =  int(data['Existing_account']) if 'Existing_account' in data else None
+    data['Credit_history'] =  int(data['Credit_history']) if 'Credit_history' in data else None
+    data['Purpose'] =  int(data['Purpose']) if 'Purpose' in data else None
+    data['Saving'] =  int(data['Saving']) if 'Saving' in data else None
+    data['Employment_duration'] =  int(data['Employment_duration']) if 'Employment_duration' in data else None
+    data['Personal_status'] =  int(data['Personal_status']) if 'Personal_status' in data else None
+    data['Debtors'] =  int(data['Debtors']) if 'Debtors' in data else None
+    data['Property'] =  int(data['Property']) if 'Property' in data else None
+    data['Installment_plans'] =  int(data['Installment_plans']) if 'Installment_plans' in data else None
+    data['Housing'] =  int(data['Housing']) if 'Housing' in data else None
+    data['Job'] =  int(data['Job']) if 'Job' in data else None
+    data['Telephone'] =  int(data['Telephone']) if 'Telephone' in data else None
+    data['Foreign_worker'] =  int(data['Foreign_worker']) if 'Foreign_worker' in data else None
     return data
 
-def Data_Wrangle(data):
-    #Here we perform data wrangling where Values in columns are converted to make more sense
-    Month_Dict = {
-    'A':'January',
-    'B':'February',
-    'C':'March',
-    'D':'April',
-    'E':'May',
-    'F':'June',
-    'G':'July',
-    'H':'August',
-    'I':'September',
-    'J':'October',
-    'K':'November',
-    'L':'December'
-    }
-    existing_account = list(data['Existing_account'])
-    for i in range(len(existing_account)):
-        month = Month_Dict[existing_account[0]]
-        days = int(''.join(existing_account[1:]))
-        data['Month'] = month
-        data['days'] = days
-    purpose = list(data['Purpose'])
-    for i in range(len(purpose)):
-        file_month = Month_Dict[purpose[0]]
-        version = int(''.join(purpose[1:]))
-        data['File_Month'] = file_month
-        data['Version'] = version
-    return data
 
-def Del_Unwanted(data):
-    #Here we delete redundant columns
-    del data['Purpose']
-    del data['Existing_account']
-    return data
     
 def run(argv=None, save_main_session=True):
     parser = argparse.ArgumentParser()
@@ -112,15 +85,9 @@ def run(argv=None, save_main_session=True):
         
         parsed_data = (data 
                      | 'Parsing Data' >> beam.ParDo(Split()))
-        '''filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-        Converted_data = (filtered_data
+        Converted_data = (parsed_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-        Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle))
-        Cleaned_data = (Wrangled_data
-                     | 'Delete Unwanted Columns' >> beam.Map(Del_Unwanted))
-        output =( Cleaned_data      
+        '''output =( Cleaned_data      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
                        '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
                        schema=SCHEMA,
