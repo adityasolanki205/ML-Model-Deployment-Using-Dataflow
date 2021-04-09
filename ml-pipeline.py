@@ -11,7 +11,7 @@ SCHEMA='Duration_month:INTEGER,Credit_history:STRING,Credit_amount:FLOAT,Saving:
 class Split(beam.DoFn):
     #This Function Splits the Dataset into a dictionary
     def process(self, element):
-        Existing_account,Duration_month,Credit_history,Purpose,Credit_amount,Saving,Employment_duration,Installment_rate,Personal_status,Debtors,Residential_Duration,Property,Age,Installment_plans,Housing,Number_of_credits,Job,Liable_People,Telephone,Foreign_worker = element.split(',')
+        serial_number,Existing_account,Duration_month,Credit_history,Purpose,Credit_amount,Saving,Employment_duration,Installment_rate,Personal_status,Debtors,Residential_Duration,Property,Age,Installment_plans,Housing,Number_of_credits,Job,Liable_People,Telephone,Foreign_worker = element.split(',')
         return [{
             'Existing_account': str(Existing_account),
             'Duration_month': str(Duration_month),
@@ -35,10 +35,6 @@ class Split(beam.DoFn):
             'Foreign_worker': str(Foreign_worker),
         }]
 
-def Filter_Data(data):
-    #This will remove rows the with Null values in any one of the columns
-    return data['Purpose'] !=  'NULL' and len(data['Purpose']) <= 3  and  data['Classification'] !=  'NULL' and data['Property'] !=  'NULL' and data['Personal_status'] != 'NULL' and data['Existing_account'] != 'NULL' and data['Credit_amount'] != 'NULL' and data['Installment_plans'] != 'NULL'
-
 def Convert_Datatype(data):
     #This will convert the datatype of columns from String to integers or Float values
     data['Duration_month'] = int(data['Duration_month']) if 'Duration_month' in data else None
@@ -52,41 +48,7 @@ def Convert_Datatype(data):
    
     return data
 
-def Data_Wrangle(data):
-    #Here we perform data wrangling where Values in columns are converted to make more sense
-    Month_Dict = {
-    'A':'January',
-    'B':'February',
-    'C':'March',
-    'D':'April',
-    'E':'May',
-    'F':'June',
-    'G':'July',
-    'H':'August',
-    'I':'September',
-    'J':'October',
-    'K':'November',
-    'L':'December'
-    }
-    existing_account = list(data['Existing_account'])
-    for i in range(len(existing_account)):
-        month = Month_Dict[existing_account[0]]
-        days = int(''.join(existing_account[1:]))
-        data['Month'] = month
-        data['days'] = days
-    purpose = list(data['Purpose'])
-    for i in range(len(purpose)):
-        file_month = Month_Dict[purpose[0]]
-        version = int(''.join(purpose[1:]))
-        data['File_Month'] = file_month
-        data['Version'] = version
-    return data
 
-def Del_Unwanted(data):
-    #Here we delete redundant columns
-    del data['Purpose']
-    del data['Existing_account']
-    return data
     
 def run(argv=None, save_main_session=True):
     parser = argparse.ArgumentParser()
@@ -108,24 +70,19 @@ def run(argv=None, save_main_session=True):
     PROJECT_ID = known_args.project
     with beam.Pipeline(options=PipelineOptions()) as p:
         data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-        output = ( data
-                   | 'Saving the output' >> beam.io.WriteToText(known_args.output))
-        '''parsed_data = (data 
+                     | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
+        
+        parsed_data = (data 
                      | 'Parsing Data' >> beam.ParDo(Split()))
-        filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-        Converted_data = (filtered_data
+        '''Converted_data = (filtered_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-        Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle))
-        Cleaned_data = (Wrangled_data
-                     | 'Delete Unwanted Columns' >> beam.Map(Del_Unwanted))
         output =( Cleaned_data      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
                        '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
                        schema=SCHEMA,
                        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)'''
+        output = ( parsed_data
+                   | 'Saving the output' >> beam.io.WriteToText(known_args.output))
         
 if __name__ == '__main__':
     run()
