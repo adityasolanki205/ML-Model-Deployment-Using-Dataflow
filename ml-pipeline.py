@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 import joblib
 
-SCHEMA='Duration_month:INTEGER,Credit_history:STRING,Credit_amount:FLOAT,Saving:STRING,Employment_duration:STRING,Installment_rate:INTEGER,Personal_status:STRING,Debtors:STRING,Residential_Duration:INTEGER,Property:STRING,Age:INTEGER,Installment_plans:STRING,Housing:STRING,Number_of_credits:INTEGER,Job:STRING,Liable_People:INTEGER,Telephone:STRING,Foreign_worker:STRING,Classification:INTEGER,Month:STRING,days:INTEGER,File_Month:STRING,Version:INTEGER'
+SCHEMA='Existing_account:INTEGER,Duration_month:FLOAT,Credit_history:INTEGER,Purpose:INTEGER,Credit_amount:FLOAT,Saving:INTEGER,Employment_duration:INTEGER,Installment_rate:FLOAT,Personal_status:INTEGER,Debtors:INTEGER,Residential_Duration:FLOAT,Property:INTEGER,Age:FLOAT,Installment_plans:INTEGER,Housing:INTEGER,Number_of_credits:FLOAT,Job:INTEGER,Liable_People:FLOAT,Telephone:INTEGER,Foreign_worker:INTEGER,Prediction:INTEGER'
 
 
 class Split(beam.DoFn):
