@@ -3,11 +3,9 @@ This is one of the part of **Introduction to Apache Beam using Python** Reposito
 
 1. **Reading the data**
 2. **Parsing the data**
-3. **Filtering the data**
-4. **Performing Type Convertion**
-5. **Data wrangling**
-6. **Deleting Unwanted Columns**
-7. **Inserting Data in Bigquery**
+3. **Performing Type Convertion**
+4. **Predicting Customer segments**
+5. **Inserting Data in Bigquery**
 
 
 ## Motivation
@@ -28,7 +26,7 @@ For the last two years, I have been part of a great learning curve wherein I hav
 
 ```bash
     # clone this repo:
-    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
+    git clone https://github.com/adityasolanki205/ML-Model-Deployment-Using-Dataflow.git
 ```
 
 ## Pipeline Construction
