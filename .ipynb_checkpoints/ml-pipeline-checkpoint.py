@@ -6,8 +6,12 @@ from apache_beam.options.pipeline_options import PipelineOptions
 import argparse
 import numpy as np
 import joblib
+from google.cloud import storage
+from apache_beam.options.pipeline_options import StandardOptions, GoogleCloudOptions, SetupOptions, PipelineOptions
 
-SCHEMA='Duration_month:INTEGER,Credit_history:STRING,Credit_amount:FLOAT,Saving:STRING,Employment_duration:STRING,Installment_rate:INTEGER,Personal_status:STRING,Debtors:STRING,Residential_Duration:INTEGER,Property:STRING,Age:INTEGER,Installment_plans:STRING,Housing:STRING,Number_of_credits:INTEGER,Job:STRING,Liable_People:INTEGER,Telephone:STRING,Foreign_worker:STRING,Classification:INTEGER,Month:STRING,days:INTEGER,File_Month:STRING,Version:INTEGER'
+from sklearn.ensemble import RandomForestClassifier
+
+SCHEMA='Existing_account:INTEGER,Duration_month:FLOAT,Credit_history:INTEGER,Purpose:INTEGER,Credit_amount:FLOAT,Saving:INTEGER,Employment_duration:INTEGER,Installment_rate:FLOAT,Personal_status:INTEGER,Debtors:INTEGER,Residential_Duration:FLOAT,Property:INTEGER,Age:FLOAT,Installment_plans:INTEGER,Housing:INTEGER,Number_of_credits:FLOAT,Job:INTEGER,Liable_People:FLOAT,Telephone:INTEGER,Foreign_worker:INTEGER,Prediction:INTEGER'
 
 
 class Split(beam.DoFn):
@@ -62,14 +66,20 @@ def Convert_Datatype(data):
     return data
 
 class Predict_Data(beam.DoFn):
-    def __init__(self, model_path=None, destination_name=None):
+    def __init__(self,project=None, bucket_name=None, model_path=None, destination_name=None):
         self._model = None
+        self._project = project
+        self._bucket_name = bucket_name
         self._model_path = model_path
         self._destination_name = destination_name
         
     def setup(self):
         """Download sklearn model from GCS"""
-        self._model = joblib.load(self._model_path)
+        download_blob(bucket_name=self._bucket_name, 
+                      source_blob_name=self._model_path,
+                      project=self._project, 
+                      destination_file_name=self._destination_name)
+        self._model = joblib.load(self._destination_name)
         
     def process(self, element):
         """Predicting using developed model"""
@@ -79,6 +89,12 @@ class Predict_Data(beam.DoFn):
         element['Prediction'] = self._model.predict(tmp).item()
         return [element]
 
+def download_blob(bucket_name=None, source_blob_name=None, project=None, destination_file_name=None):
+    storage_client = storage.Client(project)
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    
     
 def run(argv=None, save_main_session=True):
     parser = argparse.ArgumentParser()
@@ -107,18 +123,16 @@ def run(argv=None, save_main_session=True):
         Converted_data = (parsed_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
         Prediction   = (Converted_data 
-                     | 'Predition' >> beam.ParDo(Predict_Data(model_path='Selected_model.pkl',
+                     | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
+                                                              bucket_name='ml-deployment', 
+                                                              model_path='Selected_model.pkl',
                                                               destination_name='Selected_model.pkl')))
-        '''Prediction   = (Converted_data 
-                     | 'Predition' >> beam.ParDo(Predict_Data(project='PROJECT_ID', 
-                                                              bucket_name='your-bucket', 
-                                                              model_path='model_rf.joblib',
-                                                              destination_name='model_rf.joblib')))
         output =( Cleaned_data      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
                        '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
                        schema=SCHEMA,
-                       write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)'''
+                       write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                       create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)'''
         output = (Prediction
                    | 'Saving the output' >> beam.io.WriteToText(known_args.output))
         
