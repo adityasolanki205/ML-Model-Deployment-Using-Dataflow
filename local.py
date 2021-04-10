@@ -101,16 +101,16 @@ def run(argv=None, save_main_session=True):
         data = (p 
                      | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
         
-        parsed_data  = (data 
+        Parsed_data  = (data 
                       | 'Parsing Data' >> beam.ParDo(Split()))
         
-        Converted_data = (parsed_data
+        Converted_data = (Parsed_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
         
         Prediction   = (Converted_data 
                      | 'Predicting the Segement' >> beam.ParDo(Predict_Data(model_path='Selected_model.pkl'
                                                               )))
-        output = (Prediction
+        Output = (Prediction
                      | 'Saving the output' >> beam.io.WriteToText(known_args.output))
         
 if __name__ == '__main__':
