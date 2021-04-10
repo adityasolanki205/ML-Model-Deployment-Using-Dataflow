@@ -5,6 +5,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 import argparse
 import numpy as np
+import joblib
 
 SCHEMA='Duration_month:INTEGER,Credit_history:STRING,Credit_amount:FLOAT,Saving:STRING,Employment_duration:STRING,Installment_rate:INTEGER,Personal_status:STRING,Debtors:STRING,Residential_Duration:INTEGER,Property:STRING,Age:INTEGER,Installment_plans:STRING,Housing:STRING,Number_of_credits:INTEGER,Job:STRING,Liable_People:INTEGER,Telephone:STRING,Foreign_worker:STRING,Classification:INTEGER,Month:STRING,days:INTEGER,File_Month:STRING,Version:INTEGER'
 
@@ -60,15 +61,24 @@ def Convert_Datatype(data):
     data['Foreign_worker'] =  int(data['Foreign_worker']) if 'Foreign_worker' in data else None
     return data
 
-class Predict_Data(beam.doFn):
-    
-class Printing(beam.DoFn):
+class Predict_Data(beam.DoFn):
+    def __init__(self, model_path=None, destination_name=None):
+        self._model = None
+        self._model_path = model_path
+        self._destination_name = destination_name
+        
+    def setup(self):
+        """Download sklearn model from GCS"""
+        self._model = joblib.load(self._model_path)
+        
     def process(self, element):
+        """Predicting using developed model"""
         input_dat = {k: element[k] for k in element.keys()}
         tmp = np.array(list(i for i in input_dat.values()))
-        #tmp = tmp.reshape(1, -1)
-        print (tmp)
-        #return element
+        tmp = tmp.reshape(1, -1)
+        element['Prediction'] = self._model.predict(tmp).item()
+        return [element]
+
     
 def run(argv=None, save_main_session=True):
     parser = argparse.ArgumentParser()
@@ -96,14 +106,20 @@ def run(argv=None, save_main_session=True):
                       | 'Parsing Data' >> beam.ParDo(Split()))
         Converted_data = (parsed_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-        Prit       = (Converted_data 
-                     | 'printing' >> beam.ParDo(Printing()))
-        '''output =( Cleaned_data      
+        Prediction   = (Converted_data 
+                     | 'Predition' >> beam.ParDo(Predict_Data(model_path='Selected_model.pkl',
+                                                              destination_name='Selected_model.pkl')))
+        '''Prediction   = (Converted_data 
+                     | 'Predition' >> beam.ParDo(Predict_Data(project='PROJECT_ID', 
+                                                              bucket_name='your-bucket', 
+                                                              model_path='model_rf.joblib',
+                                                              destination_name='model_rf.joblib')))
+        output =( Cleaned_data      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
                        '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
                        schema=SCHEMA,
                        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)'''
-        output = (parsed_data
+        output = (Prediction
                    | 'Saving the output' >> beam.io.WriteToText(known_args.output))
         
 if __name__ == '__main__':
