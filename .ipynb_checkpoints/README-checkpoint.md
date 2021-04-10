@@ -4,8 +4,8 @@ This is one of the part of **Introduction to Apache Beam using Python** Reposito
 1. **Reading the data**
 2. **Parsing the data**
 3. **Performing Type Convertion**
-5. **Predicting Customer segments**
-7. **Inserting Data in Bigquery**
+4. **Predicting Customer segments**
+5. **Inserting Data in Bigquery**
 
 
 ## Motivation
