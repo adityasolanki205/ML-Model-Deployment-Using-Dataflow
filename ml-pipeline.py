@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
 import argparse
 import numpy as np
 import joblib
@@ -106,35 +105,27 @@ def run(argv=None, save_main_session=True):
       '--project',
       dest='project',
       help='Project used for this Pipeline')
-    parser.add_argument(
-      '--output',
-      dest='output',
-      default='../output/result.txt',
-      help='Output file to write results to.')
     known_args, pipeline_args = parser.parse_known_args(argv)
     options = PipelineOptions(pipeline_args)
     PROJECT_ID = known_args.project
     with beam.Pipeline(options=PipelineOptions()) as p:
-        data = (p 
+        data         = (p 
                      | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
-        
         parsed_data  = (data 
-                      | 'Parsing Data' >> beam.ParDo(Split()))
+                     | 'Parsing Data' >> beam.ParDo(Split()))
         Converted_data = (parsed_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
         Prediction   = (Converted_data 
                      | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
                                                               bucket_name='ml-deployment', 
-                                                              model_path='Selected_model.pkl',
+                                                              model_path='/bucket/Selected_model.pkl',
                                                               destination_name='Selected_model.pkl')))
-        output =( Cleaned_data      
+        output       = ( Cleaned_data      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
-                       '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
-                       schema=SCHEMA,
-                       write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                       create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)'''
-        output = (Prediction
-                   | 'Saving the output' >> beam.io.WriteToText(known_args.output))
+                           '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
+                           schema=SCHEMA,
+                           write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
+                       ))
         
 if __name__ == '__main__':
     run()
