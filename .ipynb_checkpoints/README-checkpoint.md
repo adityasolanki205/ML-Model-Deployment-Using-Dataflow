@@ -233,38 +233,7 @@ Below are the steps to setup the enviroment and run the codes:
         run()
 ```
 
-8. **Delete Unwanted Columns**: After converting certain columns to sensable data we will remove redundant columns from the dataset. Output of this is present with the file name Delete_Unwanted_Columns text file.
-
-```python
-    ...
-    def Del_Unwanted(data):
-        #Here we delete redundant columns
-        del data['Purpose']
-        del data['Existing_account']
-        return data
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-            Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle))    
-            Cleaned_data = (Wrangled_data
-                     | 'Delete Unwanted Columns' >> beam.Map(Del_Unwanted)                 
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()    
-```
-
-9. **Inserting Data in Bigquery**: Final step in the Pipeline it to insert the data in Bigquery. To do this we will use **beam.io.WriteToBigQuery()** which requires Project id and a Schema of the target table to save the data. 
+7. **Inserting Data in Bigquery**: Final step in the Pipeline it to insert the data in Bigquery. To do this we will use **beam.io.WriteToBigQuery()** which requires Project id and a Schema of the target table to save the data. 
 
 ```python
     import apache_beam as beam
@@ -273,29 +242,27 @@ Below are the steps to setup the enviroment and run the codes:
     
     SCHEMA = 
     '
-    Duration_month:INTEGER,
-    Credit_history:STRING,
-    Credit_amount:FLOAT,
-    Saving:STRING,
-    Employment_duration:STRING,
-    Installment_rate:INTEGER,
-    Personal_status:STRING,
-    Debtors:STRING,
-    Residential_Duration:INTEGER,
-    Property:STRING,
-    Age:INTEGER,
-    Installment_plans:STRING,
-    Housing:STRING,
-    Number_of_credits:INTEGER,
-    Job:STRING,
-    Liable_People:INTEGER,
-    Telephone:STRING,
-    Foreign_worker:STRING,
-    Classification:INTEGER,
-    Month:STRING,
-    days:INTEGER,
-    File_Month:STRING,
-    Version:INTEGER
+        Existing_account:INTEGER,
+        Duration_month:FLOAT,
+        Credit_history:INTEGER,
+        Purpose:INTEGER,
+        Credit_amount:FLOAT,
+        Saving:INTEGER,
+        Employment_duration:INTEGER,
+        Installment_rate:FLOAT,
+        Personal_status:INTEGER,
+        Debtors:INTEGER,
+        Residential_Duration:FLOAT,
+        Property:INTEGER,
+        Age:FLOAT,
+        Installment_plans:INTEGER,
+        Housing:INTEGER,
+        Number_of_credits:FLOAT,
+        Job:INTEGER,
+        Liable_People:FLOAT,
+        Telephone:INTEGER,
+        Foreign_worker:INTEGER,
+        Prediction:INTEGER
     '
     ...
     def run(argv=None, save_main_session=True):
@@ -307,24 +274,22 @@ Below are the steps to setup the enviroment and run the codes:
         ...
         PROJECT_ID = known_args.project
         with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-            Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle))    
-            Cleaned_data = (Wrangled_data
-                     | 'Delete Unwanted Columns' >> beam.Map(Del_Unwanted)  
-            output =( Cleaned_data      
-                     | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
-                       '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
-                       schema=SCHEMA,
-                       write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND)
-                    )
+            data         = (p 
+                         | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
+            parsed_data  = (data 
+                         | 'Parsing Data' >> beam.ParDo(Split()))
+            Converted_data = (parsed_data
+                         | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
+            Prediction   = (Converted_data 
+                         | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
+                                                                  bucket_name='gs://batch-pipeline-testing', 
+                                                                  model_path='Selected_Model.pkl',
+                                                                  destination_name='Selected_model.pkl')))
+            output       = ( Prediction      
+                         | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
+                               '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
+                               schema=SCHEMA,
+                               write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND))
 
     if __name__ == '__main__':
         run()        
@@ -336,11 +301,11 @@ To test the code we need to do the following:
     1. Copy the repository in Cloud SDK using below command:
     git clone https://github.com/adityasolanki205/ML-Model-Deployment-Using-Dataflow.git
     
-    2. Create a Storage Bucket in asia-east1.
+    2. Create a Storage Bucket in asia-east1 by the name batch-pipeline-testing.
     
     3. Copy the data file in the cloud Bucket using the below commad
-    cd Batch-Processing-Pipeline-using-DataFlow/data
-    gsutil cp german.data gs://batch-pipeline-testing/Batch/
+    cd ML-Model-Deployment-Using-Dataflow/data
+    gsutil cp clean_customer_data.csv gs://batch-pipeline-testing/
     
     4. Create a Dataset in asia-east1 by the name GermanCredit
     
@@ -354,7 +319,7 @@ To test the code we need to do the following:
     7. Run the command and see the magic happen:
      python3 ml-pipeline.py \
      --runner DataFlowRunner \
-     --project trusty-field-283517 \
+     --project <Project Name> \
      --temp_location gs://batch-pipeline-testing/Batch/Temp \
      --staging_location gs://batch-pipeline-testing/Batch/Stage \
      --input gs://batch-pipeline-testing/clean_customer_data.csv \
@@ -368,3 +333,4 @@ To test the code we need to do the following:
 1. Akash Nimare's [README.md](https://gist.github.com/akashnimare/7b065c12d9750578de8e705fb4771d2f#file-readme-md)
 2. [Apache Beam](https://beam.apache.org/documentation/programming-guide/#triggers)
 3. [Building Data Processing Pipeline With Apache Beam, Dataflow & BigQuery](https://towardsdatascience.com/apache-beam-pipeline-for-cleaning-batch-data-using-cloud-dataflow-and-bigquery-f9272cd89eba)
+4. [Model deployment with Apache Beam and Dataflow](https://towardsdatascience.com/model-deployment-with-apache-beam-and-dataflow-be1175c96d1f)
