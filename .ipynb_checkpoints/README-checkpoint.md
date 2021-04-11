@@ -172,9 +172,11 @@ Below are the steps to setup the enviroment and run the codes:
 ```
 
 6. **Predicting Customer segments**: Now we will implement the machine learning model. If you wish to learn how this machine learning model is create visit this [repository](https://github.com/adityasolanki205/German-Credit). We will save this model using JobLib library. To load the sklearn model we will have to follow the steps mentioned below:
-    - i. Something
+    - i. Download the Model from Google Storage bucket using download_blob method
     
-    - ii. Something
+    - ii. Load the model using setup method in Predict_data class
+    
+    - iii. Predict Customer segments in the input
 
 ```python
     ... 
