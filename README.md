@@ -371,6 +371,7 @@ To test the code we need to do the following:
      --region asia-east1 \
      --job_name ml-germananalysis \
      --save_main_session True
+     — setup_file ./setup.py
 
 
 ## Credits
