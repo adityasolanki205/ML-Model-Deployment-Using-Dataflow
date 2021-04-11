@@ -362,14 +362,16 @@ To test the code we need to do the following:
     sudo pip3 install apache_beam[gcp]
     
     7. Run the command and see the magic happen:
-     python3 batch-pipeline.py \
+     python3 ml-pipeline.py \
      --runner DataFlowRunner \
-     --project <Your Project Name> \
+     --project trusty-field-283517 \
      --temp_location gs://batch-pipeline-testing/Batch/Temp \
      --staging_location gs://batch-pipeline-testing/Batch/Stage \
-     --input gs://batch-pipeline-testing/Batch/german.data \
+     --input gs://batch-pipeline-testing/clean_customer_data.csv
      --region asia-east1 \
-     --job_name germananalysis
+     --job_name ml-germananalysis \
+     --save_main_session True
+     — setup_file ./setup.py
 
 
 ## Credits
