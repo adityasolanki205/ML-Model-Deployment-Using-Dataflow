@@ -39,7 +39,7 @@ Below are the steps to setup the enviroment and run the codes:
 
 ```bash
     # clone this repo:
-    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
+    git clone https://github.com/adityasolanki205/ML-Model-Deployment-Using-Dataflow.git
 ```
 
 3. **Reading the Data**: Now we will go step by step to create a pipeline starting with reading the data. The data is read using **beam.io.ReadFromText()**. Here we will just read the input values and save it in a file. The output is stored in text file named simpleoutput.
@@ -346,7 +346,7 @@ Below are the steps to setup the enviroment and run the codes:
 To test the code we need to do the following:
 
     1. Copy the repository in Cloud SDK using below command:
-    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
+    git clone https://github.com/adityasolanki205/ML-Model-Deployment-Using-Dataflow.git
     
     2. Create a Storage Bucket in asia-east1.
     
