@@ -367,11 +367,11 @@ To test the code we need to do the following:
      --project trusty-field-283517 \
      --temp_location gs://batch-pipeline-testing/Batch/Temp \
      --staging_location gs://batch-pipeline-testing/Batch/Stage \
-     --input gs://batch-pipeline-testing/clean_customer_data.csv
+     --input gs://batch-pipeline-testing/clean_customer_data.csv \
      --region asia-east1 \
      --job_name ml-germananalysis \
-     --save_main_session True
-     — setup_file ./setup.py
+     --save_main_session True \
+     --setup_file ./setup.py
 
 
 ## Credits
