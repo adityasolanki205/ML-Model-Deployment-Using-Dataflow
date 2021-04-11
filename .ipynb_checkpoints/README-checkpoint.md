@@ -176,9 +176,9 @@ Below are the steps to setup the enviroment and run the codes:
     
     - Load the model using setup() method in Predict_data() class
     
-    - Predict Customer segments in the input using Predict() method of sklearn
+    - Predict Customer segments from the input data using Predict() method of sklearn
     
-    - Add Prediction column in the input
+    - Add Prediction column in the output
 
 ```python
     ... 
