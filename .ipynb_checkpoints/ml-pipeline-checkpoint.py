@@ -64,6 +64,12 @@ def Convert_Datatype(data):
     data['Foreign_worker'] =  int(data['Foreign_worker']) if 'Foreign_worker' in data else None
     return data
 
+def download_blob(bucket_name=None, source_blob_name=None, project=None, destination_file_name=None):
+    storage_client = storage.Client(project)
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    
 class Predict_Data(beam.DoFn):
     def __init__(self,project=None, bucket_name=None, model_path=None, destination_name=None):
         self._model = None
@@ -88,11 +94,7 @@ class Predict_Data(beam.DoFn):
         element['Prediction'] = self._model.predict(tmp).item()
         return [element]
 
-def download_blob(bucket_name=None, source_blob_name=None, project=None, destination_file_name=None):
-    storage_client = storage.Client(project)
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(source_blob_name)
-    blob.download_to_filename(destination_file_name)
+
     
     
 def run(argv=None, save_main_session=True):
@@ -120,7 +122,7 @@ def run(argv=None, save_main_session=True):
                                                               bucket_name='ml-deployment', 
                                                               model_path='/bucket/Selected_model.pkl',
                                                               destination_name='Selected_model.pkl')))
-        output       = ( Cleaned_data      
+        output       = ( Prediction      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
                            '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
                            schema=SCHEMA,
