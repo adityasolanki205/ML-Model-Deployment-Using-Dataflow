@@ -119,8 +119,8 @@ def run(argv=None, save_main_session=True):
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
         Prediction   = (Converted_data 
                      | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
-                                                              bucket_name='ml-deployment', 
-                                                              model_path='/bucket/Selected_model.pkl',
+                                                              bucket_name='batch-pipeline-testing', 
+                                                              model_path='gs://batch-pipeline-testing/Selected_Model.pkl',
                                                               destination_name='Selected_model.pkl')))
         output       = ( Prediction      
                      | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
