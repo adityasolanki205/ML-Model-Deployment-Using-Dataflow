@@ -66,13 +66,13 @@ Below are the steps to setup the enviroment and run the codes:
     if __name__ == '__main__':
         run()
 ``` 
-
-4. **Parsing the data**: After reading the input file we will split the data using split(). Data is segregated into different columns to be used in further steps. We will **ParDo()** to create a split function. The output of this step is present in SplitPardo text file.
+4. **Parsing the data**: After reading the input file we will split the data using split(). Data is segregated into different columns to be used in further steps. We will **ParDo()** to create a split function. The output of this step is present in split text file.
 
 ```python
     class Split(beam.DoFn):
         #This Function Splits the Dataset into a dictionary
         def process(self, element): 
+            serial_number,
             Existing_account,
             Duration_month,
             Credit_history,
@@ -115,7 +115,6 @@ Below are the steps to setup the enviroment and run the codes:
             'Liable_People': str(Liable_People),
             'Telephone': str(Telephone),
             'Foreign_worker': str(Foreign_worker),
-            'Classification': str(Classification)
         }]
     def run(argv=None, save_main_session=True):
         ...
@@ -129,101 +128,32 @@ Below are the steps to setup the enviroment and run the codes:
     if __name__ == '__main__':
         run()
 ``` 
-
-5. **Filtering the data**: Now we will clean the data by removing all the rows having Null values from the dataset. We will use **Filter()** to return only valid rows with no Null values. Output of this step is saved in the file named Filtered_data.
-
-```python
-    ...
-    def Filter_Data(data):
-    #This will remove rows the with Null values in any one of the columns
-        return data['Purpose'] !=  'NULL' 
-        and len(data['Purpose']) <= 3  
-        and data['Classification'] !=  'NULL' 
-        and data['Property'] !=  'NULL' 
-        and data['Personal_status'] != 'NULL' 
-        and data['Existing_account'] != 'NULL' 
-        and data['Credit_amount'] != 'NULL' 
-        and data['Installment_plans'] != 'NULL'
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data)          
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()
-```
-
-6. **Performing Type Convertion**: After Filtering we will convert the datatype of numeric columns from String to Int or Float datatype. Here we will use **Map()** to apply the Convert_Datatype(). The output of this step is saved in Convert_datatype text file.
+5. **Performing Type Convertion**: After Filtering we will convert the datatype of numeric columns from String to Int or Float datatype. Here we will use **Map()** to apply the Convert_Datatype(). The output of this step is saved in Converted_datatype text file.
 
 ```python
     ... 
     def Convert_Datatype(data):
         #This will convert the datatype of columns from String to integers or Float values
-        data['Duration_month'] = int(data['Duration_month']) if 'Duration_month' in data else None
+        data['Duration_month'] = float(data['Duration_month']) if 'Duration_month' in data else None
         data['Credit_amount'] = float(data['Credit_amount']) if 'Credit_amount' in data else None
-        data['Installment_rate'] = int(data['Installment_rate']) if 'Installment_rate' in data else None
-        data['Residential_Duration'] = int(data['Residential_Duration']) if 'Residential_Duration' in data else None
-        data['Age'] = int(data['Age']) if 'Age' in data else None
-        data['Number_of_credits'] = int(data['Number_of_credits']) if 'Number_of_credits' in data else None
-        data['Liable_People'] = int(data['Liable_People']) if 'Liable_People' in data else None
-        data['Classification'] =  int(data['Classification']) if 'Classification' in data else None
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype)
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()
-```
-
-7. **Data wrangling**: Now we will do some data wrangling to make some more sense of the data in some columns. For Existing_account contain 3 characters. First character is an Aplhabet which signifies Month of the year and next 2 characters are numeric which signify days. So here as well we will use Map() to wrangle data. The output of this dataset is present by the name DataWrangle.
-
-```python
-    ... 
-    def Data_Wrangle(data):
-    #Here we perform data wrangling where Values in columns are converted to make more sense
-        Month_Dict = {
-        'A':'January',
-        'B':'February',
-        'C':'March',
-        'D':'April',
-        'E':'May',
-        'F':'June',
-        'G':'July',
-        'H':'August',
-        'I':'September',
-        'J':'October',
-        'K':'November',
-        'L':'December'
-        }
-        existing_account = list(data['Existing_account'])
-        for i in range(len(existing_account)):
-            month = Month_Dict[existing_account[0]]
-            days = int(''.join(existing_account[1:]))
-            data['Month'] = month
-            data['days'] = days
-        purpose = list(data['Purpose'])
-        for i in range(len(purpose)):
-            file_month = Month_Dict[purpose[0]]
-            version = int(''.join(purpose[1:]))
-            data['File_Month'] = file_month
-            data['Version'] = version
+        data['Installment_rate'] = float(data['Installment_rate']) if 'Installment_rate' in data else None
+        data['Residential_Duration'] = float(data['Residential_Duration']) if 'Residential_Duration' in data else None
+        data['Age'] = float(data['Age']) if 'Age' in data else None
+        data['Number_of_credits'] = float(data['Number_of_credits']) if 'Number_of_credits' in data else None
+        data['Liable_People'] = float(data['Liable_People']) if 'Liable_People' in data else None
+        data['Existing_account'] =  int(data['Existing_account']) if 'Existing_account' in data else None
+        data['Credit_history'] =  int(data['Credit_history']) if 'Credit_history' in data else None
+        data['Purpose'] =  int(data['Purpose']) if 'Purpose' in data else None
+        data['Saving'] =  int(data['Saving']) if 'Saving' in data else None
+        data['Employment_duration'] =  int(data['Employment_duration']) if 'Employment_duration' in data else None
+        data['Personal_status'] =  int(data['Personal_status']) if 'Personal_status' in data else None
+        data['Debtors'] =  int(data['Debtors']) if 'Debtors' in data else None
+        data['Property'] =  int(data['Property']) if 'Property' in data else None
+        data['Installment_plans'] =  int(data['Installment_plans']) if 'Installment_plans' in data else None
+        data['Housing'] =  int(data['Housing']) if 'Housing' in data else None
+        data['Job'] =  int(data['Job']) if 'Job' in data else None
+        data['Telephone'] =  int(data['Telephone']) if 'Telephone' in data else None
+        data['Foreign_worker'] =  int(data['Foreign_worker']) if 'Foreign_worker' in data else None
         return data
     ...
     def run(argv=None, save_main_session=True):
@@ -233,14 +163,68 @@ Below are the steps to setup the enviroment and run the codes:
                      | beam.io.ReadFromText(known_args.input) )
             parsed_data = (data 
                      | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-            Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle)                  
+            Converted_data = (parsed_data
+                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype)
                      | 'Writing output' >> beam.io.WriteToText(known_args.output))
 
+    if __name__ == '__main__':
+        run()
+```
+
+6. **Predicting Customer segments**: Now we will implement the machine learning model. If you wish to learn how this machine learning model is create visit this [repository](https://github.com/adityasolanki205/German-Credit). We will save this model using JobLib library. To load the sklearn model we will have to follow the steps mentioned below:
+    - i. Something
+    
+    - ii. Something
+
+```python
+    ... 
+    def download_blob(bucket_name=None, source_blob_name=None, project=None, destination_file_name=None):
+        storage_client = storage.Client(project)
+        bucket = storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(source_blob_name)
+        blob.download_to_filename(destination_file_name)
+
+    class Predict_Data(beam.DoFn):
+        def __init__(self,project=None, bucket_name=None, model_path=None, destination_name=None):
+            self._model = None
+            self._project = project
+            self._bucket_name = bucket_name
+            self._model_path = model_path
+            self._destination_name = destination_name
+
+        def setup(self):
+            """Download sklearn model from GCS"""
+            download_blob(bucket_name=self._bucket_name, 
+                          source_blob_name=self._model_path,
+                          project=self._project, 
+                          destination_file_name=self._destination_name)
+            self._model = joblib.load(self._destination_name)
+
+        def process(self, element):
+            """Predicting using developed model"""
+            input_dat = {k: element[k] for k in element.keys()}
+            tmp = np.array(list(i for i in input_dat.values()))
+            tmp = tmp.reshape(1, -1)
+            element['Prediction'] = self._model.predict(tmp).item()
+            return [element]
+    ...
+    def run(argv=None, save_main_session=True):
+        ...
+        with beam.Pipeline(options=PipelineOptions()) as p:
+            data           = (p 
+                             | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
+            Parsed_data    = (data 
+                             | 'Parsing Data' >> beam.ParDo(Split()))
+            Converted_data = (Parsed_data
+                             | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
+
+            Prediction     = (Converted_data 
+                             | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
+                                                         bucket_name='gs://batch-pipeline-testing', 
+                                                         model_path='Selected_Model.pkl',
+                                                         destination_name='Selected_model.pkl')))
+            Output         = (Prediction
+                             | 'Saving the output' >> beam.io.WriteToText(known_args.output))
     if __name__ == '__main__':
         run()
 ```
@@ -360,6 +344,8 @@ To test the code we need to do the following:
     
     6. Install Apache Beam on the SDK using below command
     sudo pip3 install apache_beam[gcp]
+    sudo pip3 install joblib
+    sudo pip3 install sklearn
     
     7. Run the command and see the magic happen:
      python3 ml-pipeline.py \
