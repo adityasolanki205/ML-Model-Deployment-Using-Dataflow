@@ -303,20 +303,24 @@ To test the code we need to do the following:
     
     2. Create a Storage Bucket in asia-east1 by the name batch-pipeline-testing.
     
-    3. Copy the data file in the cloud Bucket using the below commad
+    3. Copy the machine learning model in the bucket
+    cd ML-Model-Deployment-Using-Dataflow
+    gsutil cp Selected_model.pkl gs://batch-pipeline-testing/
+    
+    4. Copy the data file in the cloud Bucket using the below commad
     cd ML-Model-Deployment-Using-Dataflow/data
     gsutil cp clean_customer_data.csv gs://batch-pipeline-testing/
     
-    4. Create a Dataset in asia-east1 by the name GermanCredit
+    5. Create a Dataset in asia-east1 by the name GermanCredit
     
-    5. Create a table in GermanCredit dataset by the name GermanCreditTable
+    6. Create a table in GermanCredit dataset by the name GermanCreditTable
     
-    6. Install Apache Beam on the SDK using below command
+    7. Install Apache Beam on the SDK using below command
     sudo pip3 install apache_beam[gcp]
     sudo pip3 install joblib
     sudo pip3 install sklearn
     
-    7. Run the command and see the magic happen:
+    8. Run the command and see the magic happen:
      python3 ml-pipeline.py \
      --runner DataFlowRunner \
      --project <Project Name> \
