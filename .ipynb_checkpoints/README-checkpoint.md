@@ -305,7 +305,7 @@ To test the code we need to do the following:
     
     3. Copy the machine learning model in the bucket
     cd ML-Model-Deployment-Using-Dataflow
-    gsutil cp Selected_model.pkl gs://batch-pipeline-testing/
+    gsutil cp Selected_Model.pkl gs://batch-pipeline-testing/
     
     4. Copy the data file in the cloud Bucket using the below commad
     cd ML-Model-Deployment-Using-Dataflow/data
