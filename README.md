@@ -6,7 +6,7 @@ This is one of the **Introduction to Apache Beam using Python** Repositories. He
 3. **Performing Type Convertion**
 4. **Creating Vertex AI Endpoint**
 5. **Predicting Customer segments by downloading model everytime**
-6. **Predicting Customer segments using Vertex AI Endpoint***
+6. **Predicting Customer segments using Vertex AI Endpoint**
 7. **Inserting Data in Bigquery**
 
 
