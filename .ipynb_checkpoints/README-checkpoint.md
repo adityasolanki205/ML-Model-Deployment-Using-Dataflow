@@ -4,8 +4,10 @@ This is one of the **Introduction to Apache Beam using Python** Repositories. He
 1. **Reading the data**
 2. **Parsing the data**
 3. **Performing Type Convertion**
-4. **Predicting Customer segments**
-5. **Inserting Data in Bigquery**
+4. **Creating Vertex AI Endpoint**
+5. **Predicting Customer segments by downloading model everytime**
+6. **Predicting Customer segments using Vertex AI Endpoint***
+7. **Inserting Data in Bigquery**
 
 
 ## Motivation
@@ -94,27 +96,27 @@ Below are the steps to setup the enviroment and run the codes:
             Telephone,
             Foreign_worker,
             Classification = element.split(' ')
-        return [{
-            'Existing_account': str(Existing_account),
-            'Duration_month': str(Duration_month),
-            'Credit_history': str(Credit_history),
-            'Purpose': str(Purpose),
-            'Credit_amount': str(Credit_amount),
-            'Saving': str(Saving),
-            'Employment_duration':str(Employment_duration),
-            'Installment_rate': str(Installment_rate),
-            'Personal_status': str(Personal_status),
-            'Debtors': str(Debtors),
-            'Residential_Duration': str(Residential_Duration),
-            'Property': str(Property),
-            'Age': str(Age),
-            'Installment_plans':str(Installment_plans),
-            'Housing': str(Housing),
-            'Number_of_credits': str(Number_of_credits),
-            'Job': str(Job),
-            'Liable_People': str(Liable_People),
-            'Telephone': str(Telephone),
-            'Foreign_worker': str(Foreign_worker),
+        return return [{
+            'Existing_account': int(Existing_account),
+            'Duration_month': float(Duration_month),
+            'Credit_history': int(Credit_history),
+            'Purpose': int(Purpose),
+            'Credit_amount': float(Credit_amount),
+            'Saving': int(Saving),
+            'Employment_duration':int(Employment_duration),
+            'Installment_rate': float(Installment_rate),
+            'Personal_status': int(Personal_status),
+            'Debtors': int(Debtors),
+            'Residential_Duration': float(Residential_Duration),
+            'Property': int(Property),
+            'Age': float(Age),
+            'Installment_plans':int(Installment_plans),
+            'Housing': int(Housing),
+            'Number_of_credits': float(Number_of_credits),
+            'Job': int(Job),
+            'Liable_People': float(Liable_People),
+            'Telephone': int(Telephone),
+            'Foreign_worker': int(Foreign_worker),
         }]
     def run(argv=None, save_main_session=True):
         ...
@@ -170,8 +172,57 @@ Below are the steps to setup the enviroment and run the codes:
     if __name__ == '__main__':
         run()
 ```
+6. **Creating Vertex AI endpoint**: Now we will create an endpoint in vertex AI. To do that we will have to follow below steps.
+    - Save the Model to GCS Bucket: To do that we will move our model to a GCS bucket
+  
+      ```python
+            from google.cloud import storage
+            storage_client = storage.Client()
+            bucket = storage_client.bucket("test_german_data")
+            model_artifact = bucket.blob('model-artifact/'+'model.joblib')
+            model_artifact.upload_from_filename('model.joblib')
+      ```
+    
+    - Register the model to Vertex AI Model Regsitry: To Upload to Model registry we will use the below code
+      ```python
+            from google.cloud.resourcemanager_v3 import FoldersAsyncClient
+            from google.cloud import aiplatform
+            from google.cloud.aiplatform.explain import ExplanationSpec
+            display_name = "german_credit-model-sdk"
+            artifact_uri = "gs://test_german_data/model-artifact"
+            serving_container_image_uri = "asia-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-5:latest"
+            
+            model = aiplatform.Model.upload(
+                    display_name=display_name,
+                    artifact_uri=artifact_uri,
+                    location='asia-south1',
+                    serving_container_image_uri=serving_container_image_uri,
+                    sync=False
+                )
+      ```
+    - Create an online prediction endpoint: To Create the Endpoint we will use the code below
+  
+      ```python
+            from google.cloud.resourcemanager_v3 import FoldersAsyncClient
+            from google.cloud import aiplatform
+            from google.cloud.aiplatform.explain import ExplanationSpe
+            deployed_model_display_name = "german-credit-model-endpoint"
+            traffic_split = {"0": 100}
+            machine_type = "n1-standard-4"
+            min_replica_count = 1
+            max_replica_count = 1
+            
+            endpoint = model.deploy(
+                    deployed_model_display_name=deployed_model_display_name,
+                    machine_type=machine_type,
+                    traffic_split = traffic_split,
+                    min_replica_count=min_replica_count,
+                    max_replica_count=max_replica_count
+            )
+      ```
 
-6. **Predicting Customer segments**: Now we will implement the machine learning model. If you wish to learn how this machine learning model was created, please visit this [repository](https://github.com/adityasolanki205/German-Credit). We will save this model using JobLib library. To load the sklearn model we will have to follow the steps mentioned below:
+ 
+7. **Predicting Customer segments by downloading model everytime**: Now we will implement the machine learning model. If you wish to learn how this machine learning model was created, please visit this [repository](https://github.com/adityasolanki205/German-Credit). We will save this model using JobLib library. To load the sklearn model we will have to follow the steps mentioned below:
     - Download the Model from Google Storage bucket using download_blob method
     
     - Load the model using setup() method in Predict_data() class
@@ -232,6 +283,42 @@ Below are the steps to setup the enviroment and run the codes:
     if __name__ == '__main__':
         run()
 ```
+8. **Predicting Customer segments using Vertex AI endpoint**: Now we will implement the machine learning model using the endpoint wee created above.
+```python
+    ... 
+    def call_vertex_ai(data, project_id='827249641444'):
+        aiplatform.init(project='827249641444', location='asia-south1')
+        feature_order = ['Existing_account', 'Duration_month', 'Credit_history', 'Purpose',
+                     'Credit_amount', 'Saving', 'Employment_duration', 'Installment_rate',
+                     'Personal_status', 'Debtors', 'Residential_Duration', 'Property', 'Age',
+                     'Installment_plans', 'Housing', 'Number_of_credits', 'Job', 
+                     'Liable_People', 'Telephone', 'Foreign_worker']
+        endpoint = aiplatform.Endpoint(endpoint_name=f"projects/827249641444/locations/asia-south1/endpoints/6402372645655937024")
+        features = [data[feature] for feature in feature_order]
+        response = endpoint.predict(
+            instances=[features]
+        )
+        
+        prediction = response.predictions[0]
+        data['Prediction'] = int(prediction)
+    return data
+    ...
+    def run(argv=None, save_main_session=True):
+        ...
+        with beam.Pipeline(options=PipelineOptions()) as p:
+            data           = (p 
+                             | beam.io.ReadFromText(known_args.input, skip_header_lines=1) )
+            Parsed_data    = (data 
+                             | 'Parsing Data' >> beam.ParDo(Split()))
+            Converted_data = (Parsed_data
+                             | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
+            Prediction   = (Converted_data
+                    |'Get Inference' >> beam.Map(call_vertex_ai, project_id='827249641444'))
+            output = ( Prediction
+                        | 'Write to GCS' >> beam.io.WriteToText('gs://test_german_data/output/result.csv'))
+    if __name__ == '__main__':
+        run()
+```
 
 7. **Inserting Data in Bigquery**: Final step in the Pipeline it to insert the data in Bigquery. To do this we will use **beam.io.WriteToBigQuery()** which requires Project id and a Schema of the target table to save the data. 
 
@@ -280,16 +367,20 @@ Below are the steps to setup the enviroment and run the codes:
                          | 'Parsing Data' >> beam.ParDo(Split()))
             Converted_data = (parsed_data
                          | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-            Prediction   = (Converted_data 
-                         | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
-                                                                  bucket_name='gs://batch-pipeline-testing', 
-                                                                  model_path='Selected_Model.pkl',
-                                                                  destination_name='Selected_model.pkl')))
+            Prediction   = (Converted_data
+                    |'Get Inference' >> beam.Map(call_vertex_ai, project_id='827249641444'))
+            # Prediction     = (Converted_data 
+            #                  | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
+            #                                              bucket_name='gs://batch-pipeline-testing', 
+            #                                              model_path='Selected_Model.pkl',
+            #                                              destination_name='Selected_model.pkl')))
             output       = ( Prediction      
-                         | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
-                               '{0}:GermanCredit.GermanCreditTable'.format(PROJECT_ID),
-                               schema=SCHEMA,
-                               write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND))
+                        | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
+                            table='solar-dialect-264808:GermanCredit.GermanCreditTable',
+                            schema=SCHEMA,
+                            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                            create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED
+                       ))
 
     if __name__ == '__main__':
         run()        
@@ -301,7 +392,7 @@ To test the code we need to do the following:
     1. Copy the repository in Cloud SDK using below command:
     git clone https://github.com/adityasolanki205/ML-Model-Deployment-Using-Dataflow.git
     
-    2. Create a Storage Bucket in asia-east1 by the name batch-pipeline-testing.
+    2. Create a Storage Bucket in asia-south1 by the name test_german_data.
     
     3. Copy the machine learning model in the bucket
     cd ML-Model-Deployment-Using-Dataflow
@@ -311,9 +402,9 @@ To test the code we need to do the following:
     cd ML-Model-Deployment-Using-Dataflow/data
     gsutil cp clean_customer_data.csv gs://batch-pipeline-testing/
     
-    5. Create a Dataset in asia-east1 by the name GermanCredit
+    5. Create a Dataset in asia-south1 by the name GermanCredit
     
-    6. Create a table in GermanCredit dataset by the name GermanCreditTable
+    6. Create a table in GermanCredit dataset by the name GermanCreditTable and SCHEMA as mentioned in the code
     
     7. Install Apache Beam on the SDK using below command
     sudo pip3 install apache_beam[gcp]
@@ -324,14 +415,13 @@ To test the code we need to do the following:
      python3 ml-pipeline.py \
      --runner DataFlowRunner \
      --project <Project Name> \
-     --temp_location gs://batch-pipeline-testing/Batch/Temp \
-     --staging_location gs://batch-pipeline-testing/Batch/Stage \
-     --input gs://batch-pipeline-testing/clean_customer_data.csv \
+     --temp_location gs:/test_german_data/Batch/Temp \
+     --staging_location gs://test_german_data/Batch/Stage \
+     --input gs://test_german_data/clean_customer_data.csv \
      --region asia-south1 \
      --job_name ml-germananalysis \
      --save_main_session True \
      --setup_file ./setup.py
-       
 
 
 ## Credits

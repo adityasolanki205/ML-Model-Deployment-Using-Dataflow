@@ -1,0 +1,1 @@
+python3 ml-pipeline.py  --runner DataFlowRunner  --project solar-dialect-264808  --temp_location gs://test_german_data/Batch/Temp  --staging_location gs://test_german_data/Batch/Stage  --input gs://test_german_data/clean_customer_data.csv  --region asia-south1  --job_name ml-germananalysis  --save_main_session True  --setup_file ./setup.py

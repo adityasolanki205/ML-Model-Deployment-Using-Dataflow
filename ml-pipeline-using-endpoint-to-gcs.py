@@ -7,7 +7,8 @@ import numpy as np
 import joblib
 from google.cloud import storage
 from apache_beam.options.pipeline_options import StandardOptions, GoogleCloudOptions, SetupOptions, PipelineOptions
-from google.cloud import aiplatform_v1beta1 as aiplatform
+from google.cloud import aiplatform
+
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -37,8 +38,6 @@ SCHEMA = {
     {'name': 'Prediction', 'type': 'INTEGER', 'mode': 'NULLABLE'}
   ]
 }
-
-
 
 class Split(beam.DoFn):
     #This Function Splits the Dataset into a dictionary
@@ -91,70 +90,24 @@ def Convert_Datatype(data):
     data['Foreign_worker'] =  int(data['Foreign_worker']) if 'Foreign_worker' in data else None
     return data
 
-# def download_blob(bucket_name=None, source_blob_name=None, project=None, destination_file_name=None):
-#     storage_client = storage.Client(project)
-#     bucket = storage_client.get_bucket(bucket_name)
-#     blob = bucket.blob(source_blob_name)
-#     blob.download_to_filename(destination_file_name)
+def call_vertex_ai(data, project_id='827249641444'):
+    aiplatform.init(project='827249641444', location='asia-south1')
+    feature_order = ['Existing_account', 'Duration_month', 'Credit_history', 'Purpose',
+                 'Credit_amount', 'Saving', 'Employment_duration', 'Installment_rate',
+                 'Personal_status', 'Debtors', 'Residential_Duration', 'Property', 'Age',
+                 'Installment_plans', 'Housing', 'Number_of_credits', 'Job', 
+                 'Liable_People', 'Telephone', 'Foreign_worker']
+    # client = aiplatform.PredictionServiceClient()
+    # endpoint = client.endpoint_path(project='827249641444', location='asia-south1', endpoint='6402372645655937024')
+    endpoint = aiplatform.Endpoint(endpoint_name=f"projects/827249641444/locations/asia-south1/endpoints/6402372645655937024")
+    features = [data[feature] for feature in feature_order]
+    response = endpoint.predict(
+        instances=[features]
+    )
     
-# class Predict_Data(beam.DoFn):
-#     def __init__(self,project=None, bucket_name=None, model_path=None, destination_name=None):
-#         self._model = None
-#         self._project = project
-#         self._bucket_name = bucket_name
-#         self._model_path = model_path
-#         self._destination_name = destination_name
-        
-#     def setup(self):
-#         """Download sklearn model from GCS"""
-#         download_blob(bucket_name=self._bucket_name, 
-#                       source_blob_name=self._model_path,
-#                       project=self._project, 
-#                       destination_file_name=self._destination_name)
-#         self._model = joblib.load(self._destination_name)
-        
-#     def process(self, element):
-#         """Predicting using developed model"""
-#         input_dat = {k: element[k] for k in element.keys()}
-#         tmp = np.array(list(i for i in input_dat.values()))
-#         tmp = tmp.reshape(1, -1)
-#         element['Prediction'] = self._model.predict(tmp).item()
-#         return [element]
-    
-# def call_vertex_ai(data, project_id=PROJECT_ID'):
-#     client = aiplatform.PredictionServiceClient()
-#     endpoint = client.endpoint_path(project=PROJECT_ID, location='asia-south1', endpoint='german_credit-model-sdk_endpoint')
-
-#     response = client.predict(
-#         endpoint=endpoint,
-#         instances=[data]
-#     )
-    
-#     prediction = response.predictions[0]
-#     data['prediction'] = prediction
-#     return data
-class PredictWithVertexAI(beam.DoFn):
-    def __init__(self, project_id, endpoint_id, region):
-        self.project_id = project_id
-        self.endpoint_id = endpoint_id
-        self.region = region
-
-    def setup(self):
-        self.client = aiplatform.PredictionServiceClient()
-        self.endpoint = self.client.endpoint_path(
-            project=self.project_id,
-            location=self.region,
-            endpoint=self.endpoint_id
-        )
-
-    def process(self, element):
-        instance = {k: v for k, v in element.items() if isinstance(v, (int, float, str))}
-        response = self.client.predict(
-            endpoint=self.endpoint,
-            instances=[instance]
-        )
-        element['Prediction'] = response.predictions[0]
-        yield element
+    prediction = response.predictions[0]
+    data['Prediction'] = prediction
+    return data
 
 def run(argv=None, save_main_session=True):
     parser = argparse.ArgumentParser()
@@ -176,22 +129,10 @@ def run(argv=None, save_main_session=True):
                      | 'Parsing Data' >> beam.ParDo(Split()))
         Converted_data = (parsed_data
                      | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-        # Prediction   = (Converted_data 
-        #              | 'Predition' >> beam.ParDo(Predict_Data(project=PROJECT_ID, 
-        #                                                       bucket_name='batch-pipeline-testing', 
-        #                                                       model_path='Selected_Model.pkl',
-        #                                                       destination_name='Selected_Model.pkl')))
         Prediction   = (Converted_data
-                        | 'Predict' >> beam.ParDo(PredictWithVertexAI(PROJECT_ID, 'german_credit-model-sdk_endpoint', 'asia-south1')))
-        # output       = ( Prediction      
-        #                 | 'Writing to bigquery' >> beam.io.WriteToBigQuery(
-        #                     table='solar-dialect-264808:GermanCredit.GermanCreditTable',
-        #                     schema=SCHEMA,
-        #                     write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        #                     create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED
-        #                ))
+                    |'Get Inference' >> beam.Map(call_vertex_ai, project_id='827249641444'))
         output = ( Prediction
-                   | 'Write to GCS' >> beam.io.WriteToText('gs://test_german_data/output/result.txt'))
+                   | 'Write to GCS' >> beam.io.WriteToText('gs://test_german_data/output/result.csv'))
         
 if __name__ == '__main__':
     run()
