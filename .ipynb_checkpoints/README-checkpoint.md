@@ -412,21 +412,16 @@ To test the code we need to do the following:
     sudo pip3 install sklearn
     
     8. Run the command and see the magic happen:
-     python3 ml-streaming-pipeline.py \
-            --runner DataFlowRunner \
-            --project solar-dialect-264808 \
-            --bucket_name test_german_data \
-            --temp_location gs://test_german_data/Batch/Temp \
-            --staging_location gs://test_german_data/Batch/Stage \
-            --region asia-south1 \
-            --job_name ml-stream-analysis \
-            --input_subscription projects/solar-dialect-264808/subscriptions/german_credit_data-sub \
-            --input_topic projects/solar-dialect-264808/topics/german_credit_data \
-            --save_main_session True \
-            --setup_file ./setup.py \
-            --minNumWorkers 1 \
-            --maxNumWorkers 4 \
-            --streaming
+     python3 ml-pipeline.py \
+     --runner DataFlowRunner \
+     --project <Project Name> \
+     --temp_location gs:/test_german_data/Batch/Temp \
+     --staging_location gs://test_german_data/Batch/Stage \
+     --input gs://test_german_data/clean_customer_data.csv \
+     --region asia-south1 \
+     --job_name ml-germananalysis \
+     --save_main_session True \
+     --setup_file ./setup.py
 
 
 ## Credits
